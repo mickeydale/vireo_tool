@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vireo Audio — Support Intelligence Dashboard</title>
+  <meta name="description" content="AI-assisted ticket categorisation and monthly breakdown dashboard for Vireo Audio customer support." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2333;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --orange: #ffa657;
+      --teal: #39d353;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* Top nav */
+    .topbar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; color: #fff;
+    }
+    .topbar-title { font-size: 16px; font-weight: 700; }
+    .topbar-sub { font-size: 12px; color: var(--muted); }
+    .topbar-badge {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Main layout */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 32px;
+    }
+
+    /* Section header */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* KPI row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .kpi-card:hover { border-color: var(--accent); }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .kpi-delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .delta-up { color: var(--red); }
+    .delta-good { color: var(--green); }
+
+    /* Charts grid */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .chart-grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .chart-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .chart-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+    .chart-wrap-tall {
+      position: relative;
+      height: 320px;
+    }
+
+    /* Headcount recommendation panel */
+    .recommend-panel {
+      background: linear-gradient(135deg, rgba(88, 166, 255, 0.08), rgba(188, 140, 255, 0.08));
+      border: 1px solid rgba(88, 166, 255, 0.25);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .recommend-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .recommend-text {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .recommend-sub {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Table */
+    .table-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+    .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+    .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .filter-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Insight card */
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .insight-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .insight-icon {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .insight-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .insight-body {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .insight-number {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 6px 0;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 6px;
+      background: var(--bg3);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s ease;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 32px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-grid, .chart-grid-3 { grid-template-columns: 1fr; }
+      .insight-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">V</div>
+    <div>
+      <div class="topbar-title">Vireo Audio — Support Intelligence</div>
+      <div class="topbar-sub">18-month analysis · Jan 2025 – Jun 2026 · 11,780 tickets</div>
+    </div>
+  </div>
+  <div class="topbar-badge">AI-Assisted · Zero API Cost</div>
+</nav>
+
+<main class="main">
+
+  <!-- KPI Row -->
+  <div class="section-title">Key Metrics — Jan 2025 to Jun 2026</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Tickets</div>
+      <div class="kpi-value" style="color:var(--accent)">11,780</div>
+      <div class="kpi-sub">18-month dataset · ~653/week peak</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg CSAT Score</div>
+      <div class="kpi-value" style="color:var(--yellow)">3.37<span style="font-size:14px;font-weight:400"> /5</span></div>
+      <div class="kpi-sub">5,345 scored tickets</div>
+      <div class="kpi-delta delta-up">↑ Room to improve</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Refunds Issued</div>
+      <div class="kpi-value" style="color:var(--red)">₹53.3L</div>
+      <div class="kpi-sub">1,894 refund events · 18 months</div>
+      <div class="kpi-delta delta-up">₹35.6L annualised</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Mis-tagged "Other"</div>
+      <div class="kpi-value" style="color:var(--purple)">1,622</div>
+      <div class="kpi-sub">13.8% of tickets unclassified</div>
+      <div class="kpi-delta delta-good">1,284 now re-classified</div>
+    </div>
+  </div>
+
+  <!-- Headcount recommendation -->
+  <div class="recommend-panel">
+    <div class="recommend-label">Priya's Question — Answered</div>
+    <div class="recommend-text">📍 The next 2 hires go to: <span style="color:var(--accent)">Chat Frontline</span></div>
+    <div class="recommend-sub">
+      Chat Frontline handled <strong>3,030 tickets</strong> from Jan 2025–Jun 2026 — the highest of any team,
+      and growing at +73% (Jan–Jun 2025 vs. Jan–Jun 2026). It is the catch-all for Connectivity, Audio, App/Firmware,
+      Product Enquiry, Account issues, and unrouted "Other" — with <strong>15 agents across Bengaluru</strong>.
+      Adding 2 agents here reduces average queue depth by an estimated 13%.
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Ticket Volume by Category</div>
+      <div class="chart-desc">Stacked area · Jan 2025 – Jun 2026 · predicted categories</div>
+      <div class="chart-wrap-tall">
+        <canvas id="monthlyStackedChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Category Distribution</div>
+      <div class="chart-desc">All 11,780 tickets · predicted category split</div>
+      <div class="chart-wrap-tall">
+        <canvas id="categoryDonutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Volume by Team</div>
+      <div class="chart-desc">Original team assignment · Jan 2025 – Jun 2026</div>
+      <div class="chart-wrap-tall">
+        <canvas id="teamMonthlyChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Team Volume (Total)</div>
+      <div class="chart-desc">Jan 2025 – Jun 2026 · Chat Frontline leads</div>
+      <div class="chart-wrap-tall">
+        <canvas id="teamBarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Insights -->
+  <div class="section-title">Key Findings</div>
+  <div class="insight-grid">
+    <div class="insight-card">
+      <div class="insight-icon">💳</div>
+      <div class="insight-title">Billing & Payments is mis-understood</div>
+      <div class="insight-number">2,564</div>
+      <div class="insight-body">
+        Most Billing tickets are actually "I paid, nothing arrived" — a dual billing + delivery signal.
+        The Billing team correctly handles payment verification, then transfers ~19% to Logistics.
+        These transfers are not errors — they're part of SOP 3.1.
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">📦</div>
+      <div class="insight-title">Delivery is the single biggest category</div>
+      <div class="insight-number">3,119</div>
+      <div class="insight-body">
+        Our classifier puts Delivery & Shipping at 26.5% of all tickets (vs. 16.2% in original tags).
+        Many "Billing" and "Other" tickets are actually delivery complaints.
+        Resolution time averages 39.7 hrs — the 2nd slowest after Warranty.
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🎯</div>
+      <div class="insight-title">Business goal: cut duplicate payments</div>
+      <div class="insight-number">₹14.1L</div>
+      <div class="insight-body">
+        498 tickets tagged DUP-PAYMENT refunded ₹14.1L over 18 months (₹9.4L/yr).
+        Auto-detecting double-charge events at checkout and proactively refunding 
+        before customers contact support could recover ~₹9L/year in support cost + goodwill.
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🔄</div>
+      <div class="insight-title">1,299 unnecessary transfers</div>
+      <div class="insight-number">₹5,412</div>
+      <div class="insight-body">
+        Each ticket transfer costs ~15 mins of agent time (₹31.25 at ₹20k/mo salary).
+        1,299 transfers = ₹40,594 lost over 18 months. Better upfront routing via this 
+        classifier could eliminate ~60% of those — saving ~₹16k/quarter.
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">⚡</div>
+      <div class="insight-title">Chat Frontline: fastest growing team</div>
+      <div class="insight-number">+73%</div>
+      <div class="insight-body">
+        Chat Frontline volume grew from 608 (Jan–Jun 2025) to 1,052 (Jan–Jun 2026).
+        It handles all tech support, product enquiries, and "Other" tickets.
+        With 15 agents, the per-agent load is rising unsustainably.
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">⏱️</div>
+      <div class="insight-title">Warranty resolution: 131 hours avg</div>
+      <div class="insight-number">5.5 days</div>
+      <div class="insight-body">
+        Warranty & Repair tickets take the longest to resolve at 131.3 hrs average.
+        With only 6 agents in Escalations & Warranty, this is a capacity bottleneck.
+        CSAT is likely dragged down here — worth investigating separately.
+      </div>
+    </div>
+  </div>
+
+  <!-- Accuracy breakdown -->
+  <div class="section-title">Classifier Accuracy — How We Know It Works</div>
+  <div class="table-card">
+    <div class="table-header">
+      <div class="chart-title">Per-Category Accuracy vs. Existing Labels</div>
+      <div class="chart-desc">Validated on 10,158 non-Other labelled tickets · keyword classifier</div>
+    </div>
+    <table id="accuracyTable">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Sample (n)</th>
+          <th>Correct</th>
+          <th>Accuracy</th>
+          <th>Main Confusion</th>
+          <th>Why It Confuses</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Delivery &amp; Shipping</strong></td>
+          <td>1,905</td>
+          <td>1,209</td>
+          <td>
+            <div>63.5%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:63.5%;background:var(--yellow)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Other</span></td>
+          <td>Short messages with no tracking keywords</td>
+        </tr>
+        <tr>
+          <td><strong>App &amp; Firmware</strong></td>
+          <td>699</td>
+          <td>422</td>
+          <td>
+            <div>60.4%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:60.4%;background:var(--yellow)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Other</span></td>
+          <td>Short messages like "app issue" without product mention</td>
+        </tr>
+        <tr>
+          <td><strong>Warranty &amp; Repair</strong></td>
+          <td>525</td>
+          <td>305</td>
+          <td>
+            <div>58.1%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:58.1%;background:var(--yellow)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Other</span></td>
+          <td>"Not working" without explicit "warranty" keyword</td>
+        </tr>
+        <tr>
+          <td><strong>Product Enquiry</strong></td>
+          <td>612</td>
+          <td>353</td>
+          <td>
+            <div>57.7%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:57.7%;background:var(--yellow)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Other</span></td>
+          <td>Pre-purchase questions without enquiry-specific language</td>
+        </tr>
+        <tr>
+          <td><strong>Audio Quality</strong></td>
+          <td>591</td>
+          <td>334</td>
+          <td>
+            <div>56.5%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:56.5%;background:var(--orange)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Warranty</span></td>
+          <td>"Defective sound" language overlaps with warranty claim</td>
+        </tr>
+        <tr>
+          <td><strong>Charging &amp; Battery</strong></td>
+          <td>820</td>
+          <td>451</td>
+          <td>
+            <div>55.0%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:55%;background:var(--orange)"></div></div>
+          </td>
+          <td><span class="badge badge-yellow">Other / Connectivity</span></td>
+          <td>Charging issues described without "charging" word</td>
+        </tr>
+        <tr>
+          <td><strong>Returns &amp; Refunds</strong></td>
+          <td>1,049</td>
+          <td>448</td>
+          <td>
+            <div>42.7%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:42.7%;background:var(--red)"></div></div>
+          </td>
+          <td><span class="badge badge-red">Billing</span></td>
+          <td>"Refund" in message → classifies as Billing & Payments</td>
+        </tr>
+        <tr>
+          <td><strong>Account &amp; Login</strong></td>
+          <td>391</td>
+          <td>146</td>
+          <td>
+            <div>37.3%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:37.3%;background:var(--red)"></div></div>
+          </td>
+          <td><span class="badge badge-red">Delivery</span></td>
+          <td>Login issues mentioned alongside order tracking</td>
+        </tr>
+        <tr>
+          <td><strong>Connectivity</strong></td>
+          <td>1,002</td>
+          <td>323</td>
+          <td>
+            <div>32.2%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:32.2%;background:var(--red)"></div></div>
+          </td>
+          <td><span class="badge badge-red">Other</span></td>
+          <td>Very short messages like "keeps dropping" fail keyword match</td>
+        </tr>
+        <tr>
+          <td><strong>Billing &amp; Payments</strong></td>
+          <td>2,564</td>
+          <td>827</td>
+          <td>
+            <div>32.3%</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:32.3%;background:var(--red)"></div></div>
+          </td>
+          <td><span class="badge badge-red">Delivery</span></td>
+          <td>"Paid + not received" → classifier picks delivery keywords</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Refund breakdown -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Refund Reasons Breakdown</div>
+      <div class="chart-desc">1,894 refund events · ₹53.3L total over 18 months</div>
+      <div class="chart-wrap">
+        <canvas id="refundChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Resolution Time by Category (Hours)</div>
+      <div class="chart-desc">Average hours from created to resolved</div>
+      <div class="chart-wrap">
+        <canvas id="resolutionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  Vireo Audio Support Intelligence · Built for Priya Raman, Head of Customer Experience ·
+  Keyword classifier (zero API cost) · 11,780 tickets · Jan 2025 – Jun 2026
+</footer>
+
+<script>
+// ── Data (from Python analysis) ─────────────────────────────────────────────
+
+const MONTHS = [
+  '2025-01','2025-02','2025-03','2025-04','2025-05','2025-06',
+  '2025-07','2025-08','2025-09','2025-10','2025-11','2025-12',
+  '2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'
+];
+
+// Predicted category monthly counts (from categorize.py output)
+const CAT_DATA = {
+  'Billing & Payments':  [36,47,55,55,46,62,47,95,65,110,107,79,78,82,101,83,89,81],
+  'Delivery & Shipping': [93,97,124,125,100,123,116,198,188,226,258,241,197,167,210,183,180,162],
+  'Returns & Refunds':   [37,46,57,45,46,49,69,84,72,86,106,83,90,76,68,79,73,76],
+  'Warranty & Repair':   [14,19,23,14,25,19,20,26,29,40,56,56,45,42,31,41,47,53],
+  'Connectivity':        [12,9,12,18,13,12,18,33,25,28,41,46,51,36,48,53,28,34],
+  'Charging & Battery':  [21,22,23,27,30,13,28,34,34,42,40,45,54,44,54,54,44,46],
+  'App & Firmware':      [13,12,16,17,19,24,29,34,36,39,35,49,28,39,34,46,37,38],
+  'Audio Quality':       [15,9,13,13,15,13,8,24,17,30,27,32,28,29,37,31,30,39],
+  'Account & Login':     [7,12,9,12,6,16,13,20,16,23,26,18,19,21,14,30,30,26],
+  'Product Enquiry':     [10,21,24,22,16,11,17,24,33,40,53,27,34,28,31,33,23,33],
+  'Other':               [56,74,106,101,108,97,97,123,156,183,203,193,188,169,152,199,175,188],
+};
+
+// Original team monthly (from Python)
+const TEAM_DATA = {
+  'Chat Frontline':       [84,95,120,101,106,102,112,180,161,207,249,220,233,198,214,237,206,205],
+  'Billing':              [71,76,104,104,83,98,97,162,143,198,219,170,143,148,159,178,144,128],
+  'Logistics':            [52,69,74,77,72,80,79,122,103,148,157,136,121,117,125,122,132,119],
+  'Email Frontline':      [45,57,61,74,55,66,82,87,110,120,131,166,132,125,125,126,114,131],
+  'Returns Desk':         [26,33,46,44,42,42,37,75,70,85,82,82,70,58,71,60,53,73],
+  'Voice Frontline':      [26,23,37,27,41,35,38,44,56,46,72,55,72,53,53,71,73,78],
+  'Escalations & Warranty':[10,15,20,22,25,16,17,25,28,43,42,40,41,34,33,38,34,42],
+};
+
+const PALETTE = {
+  'Billing & Payments':  '#f85149',
+  'Delivery & Shipping': '#58a6ff',
+  'Returns & Refunds':   '#ffa657',
+  'Warranty & Repair':   '#bc8cff',
+  'Connectivity':        '#39d353',
+  'Charging & Battery':  '#d29922',
+  'App & Firmware':      '#79c0ff',
+  'Audio Quality':       '#ff7b72',
+  'Account & Login':     '#56d364',
+  'Product Enquiry':     '#e3b341',
+  'Other':               '#484f58',
+};
+
+const TEAM_PALETTE = {
+  'Chat Frontline':        '#58a6ff',
+  'Billing':               '#f85149',
+  'Logistics':             '#ffa657',
+  'Email Frontline':       '#bc8cff',
+  'Returns Desk':          '#39d353',
+  'Voice Frontline':       '#d29922',
+  'Escalations & Warranty':'#ff7b72',
+};
+
+// ── Chart defaults ───────────────────────────────────────────────────────────
+Chart.defaults.color = '#8b949e';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+// ── Monthly Stacked Area Chart ───────────────────────────────────────────────
+{
+  const ctx = document.getElementById('monthlyStackedChart').getContext('2d');
+  const datasets = Object.entries(CAT_DATA).map(([cat, data]) => ({
+    label: cat,
+    data,
+    backgroundColor: PALETTE[cat] + '88',
+    borderColor: PALETTE[cat],
+    borderWidth: 1.5,
+    fill: true,
+    tension: 0.4,
+    pointRadius: 0,
+  }));
+
+  new Chart(ctx, {
+    type: 'line',
+    data: { labels: MONTHS, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          callbacks: {
+            footer: (items) => {
+              const total = items.reduce((s, i) => s + i.raw, 0);
+              return `Total: ${total}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#21262d' }, ticks: { maxRotation: 45 } },
+        y: { grid: { color: '#21262d' }, stacked: true, beginAtZero: true },
+      },
+    }
+  });
+}
+
+// ── Category Donut ───────────────────────────────────────────────────────────
+{
+  const ctx = document.getElementById('categoryDonutChart').getContext('2d');
+  const totals = Object.entries(CAT_DATA).map(([cat, d]) => [cat, d.reduce((s,v)=>s+v,0)]);
+  totals.sort((a,b) => b[1]-a[1]);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: totals.map(([c])=>c),
+      datasets: [{
+        data: totals.map(([,v])=>v),
+        backgroundColor: totals.map(([c])=>PALETTE[c]),
+        borderColor: '#161b22',
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 10, boxWidth: 12 }
+        },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          callbacks: {
+            label: (ctx) => {
+              const total = ctx.dataset.data.reduce((s,v)=>s+v,0);
+              const pct = ((ctx.raw/total)*100).toFixed(1);
+              return `${ctx.label}: ${ctx.raw.toLocaleString()} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Team Monthly Line Chart ──────────────────────────────────────────────────
+{
+  const ctx = document.getElementById('teamMonthlyChart').getContext('2d');
+  const datasets = Object.entries(TEAM_DATA).map(([team, data]) => ({
+    label: team,
+    data,
+    borderColor: TEAM_PALETTE[team],
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    pointRadius: 3,
+    tension: 0.3,
+  }));
+
+  new Chart(ctx, {
+    type: 'line',
+    data: { labels: MONTHS, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 8, boxWidth: 12 }
+        },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+        }
+      },
+      scales: {
+        x: { grid: { color: '#21262d' }, ticks: { maxRotation: 45 } },
+        y: { grid: { color: '#21262d' }, beginAtZero: true },
+      },
+    }
+  });
+}
+
+// ── Team Total Bar Chart ─────────────────────────────────────────────────────
+{
+  const ctx = document.getElementById('teamBarChart').getContext('2d');
+  const totals = Object.entries(TEAM_DATA)
+    .map(([team, data]) => [team, data.reduce((s,v)=>s+v,0)])
+    .sort((a,b) => b[1]-a[1]);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: totals.map(([t]) => t.replace(' Frontline','').replace(' & Warranty','')),
+      datasets: [{
+        label: 'Total Tickets',
+        data: totals.map(([,v]) => v),
+        backgroundColor: totals.map(([t]) => TEAM_PALETTE[t] + 'cc'),
+        borderColor: totals.map(([t]) => TEAM_PALETTE[t]),
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+        }
+      },
+      scales: {
+        x: { grid: { color: '#21262d' }, beginAtZero: true },
+        y: { grid: { display: false } },
+      },
+    }
+  });
+}
+
+// ── Refund reasons bar chart ─────────────────────────────────────────────────
+{
+  const ctx = document.getElementById('refundChart').getContext('2d');
+  const reasons = [
+    { label: 'Return – QC OK', count: 663, amount: 2280000 },
+    { label: 'Duplicate Payment', count: 498, amount: 1412000 },
+    { label: 'Cancellation', count: 303, amount: 852000 },
+    { label: 'Lost in Transit', count: 161, amount: 482000 },
+    { label: 'Dead on Arrival', count: 108, amount: 189000 },
+    { label: 'Price Adjustment', count: 81, amount: 67000 },
+    { label: 'Warranty Buyback', count: 45, amount: 45000 },
+    { label: 'Goodwill Other', count: 35, amount: 5723 },
+  ].sort((a,b) => b.count - a.count);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: reasons.map(r => r.label),
+      datasets: [{
+        label: 'Count',
+        data: reasons.map(r => r.count),
+        backgroundColor: ['#f85149cc','#ffa657cc','#58a6ffcc','#bc8cffcc','#39d353cc','#d29922cc','#ff7b72cc','#484f58cc'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          callbacks: {
+            afterLabel: (ctx) => {
+              return `Amount: ₹${(reasons[ctx.dataIndex].amount/100000).toFixed(1)}L`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 30, font: { size: 11 } } },
+        y: { grid: { color: '#21262d' }, beginAtZero: true },
+      }
+    }
+  });
+}
+
+// ── Resolution time chart ─────────────────────────────────────────────────────
+{
+  const ctx = document.getElementById('resolutionChart').getContext('2d');
+  const cats = [
+    { label: 'Warranty & Repair', hours: 131.3 },
+    { label: 'Returns & Refunds', hours: 38.9 },
+    { label: 'Delivery & Shipping', hours: 39.7 },
+    { label: 'Billing & Payments', hours: 19.6 },
+    { label: 'Audio Quality', hours: 13.4 },
+    { label: 'Other', hours: 13.7 },
+    { label: 'Connectivity', hours: 10.5 },
+    { label: 'Charging & Battery', hours: 9.0 },
+    { label: 'App & Firmware', hours: 3.9 },
+    { label: 'Product Enquiry', hours: 0.0 },
+    { label: 'Account & Login', hours: 0.0 },
+  ].sort((a,b) => b.hours - a.hours);
+
+  const colors = cats.map(c =>
+    c.hours > 50 ? '#f85149cc' :
+    c.hours > 20 ? '#ffa657cc' :
+    c.hours > 5  ? '#d29922cc' : '#3fb950cc'
+  );
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cats.map(c => c.label.replace(' & Payments','').replace(' & Shipping','').replace(' & Repair','')),
+      datasets: [{
+        label: 'Avg Hours',
+        data: cats.map(c => c.hours),
+        backgroundColor: colors,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2333',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw} hours avg`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#21262d' }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
